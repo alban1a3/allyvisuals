@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "visualclient",
+  "version": "${version}",
+  "name": "Visual Client",
+  "description": "Cosmetic client: HUD, fullbright, animated menu.",
+  "environment": "client",
+  "entrypoints": { "client": ["com.visualclient.VisualClient"] },
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "minecraft": "1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
