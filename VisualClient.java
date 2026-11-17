@@ -3,13 +3,11 @@ package com.visualclient;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 public class VisualClient implements ClientModInitializer {
@@ -23,20 +21,14 @@ public class VisualClient implements ClientModInitializer {
     public void onInitializeClient() {
         Config.load();
 
-        // 1.21.9+: key categories are objects, not plain strings
-        KeyBinding.Category category =
-                KeyBinding.Category.create(Identifier.of("visualclient", "main"));
-
         menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.visualclient.menu", InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_RIGHT_SHIFT, category));
+                GLFW.GLFW_KEY_RIGHT_SHIFT, "category.visualclient"));
         fullbrightKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.visualclient.fullbright", InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_G, category));
+                GLFW.GLFW_KEY_G, "category.visualclient"));
 
-        // HudRenderCallback is deprecated; new HUD API
-        HudElementRegistry.attachElementBefore(
-                VanillaHudElements.CHAT, Identifier.of("visualclient", "hud"), Hud::render);
+        HudRenderCallback.EVENT.register(Hud::render);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ticks++;
@@ -48,8 +40,11 @@ public class VisualClient implements ClientModInitializer {
                 return;
             }
 
+            // HUD data is rebuilt 10x/sec instead of every frame
             if (ticks % 2 == 0) Hud.update(client);
 
+            // Fullbright check: only on change, or once every 2 seconds
+            // (re-applies the effect after death / dimension change)
             if (Config.fullbright != lastFullbright || ticks % 40 == 0) {
                 lastFullbright = Config.fullbright;
                 boolean has = client.player.hasStatusEffect(StatusEffects.NIGHT_VISION);
